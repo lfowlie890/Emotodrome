@@ -9,8 +9,8 @@ import emotodrome.mesh.Vec3;
  */
 public class Camera {
 	private Vec3 eye;				//position vector of camera
-	private Vec3 persp;				//perspective vector of camera
-	private Vec3 up;				//up vector of camera
+	private Vec3 persp;				//perspective vector of camera (where its looking)
+	private Vec3 up;				//up vector of camera (what is up and what is down)... (0,-1,0) would show the world upside down for example
 	private Vec3 latLon;
 	private Vec3 moveAmount;
 	private boolean move;			//are we moving

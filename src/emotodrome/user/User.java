@@ -34,6 +34,7 @@ public class User {
 		return userAvatar;
 	}
 
+	//adjust vector that affects the position of the user's moving avatar
 	public void adjustUserVector(Vec3 moveVector){
 		if (userAvatar != null){
 			if (moveLaterVector != null){

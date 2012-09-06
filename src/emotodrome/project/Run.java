@@ -74,6 +74,7 @@ public class Run extends Activity {
 	private MediaPlayer mp;  //Media player for bg music  
 	// 
 	
+	//called when application is first run, long running methods should not go here but should be placed in threads that are called from here, as this thread delays the UI thread
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);

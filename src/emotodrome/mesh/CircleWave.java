@@ -12,7 +12,6 @@ public class CircleWave extends Mesh{
 	private float[] innerRadii;
 	private float maxRadius;
 	private float minRadius;
-	private float spacing;
 	private float[][] colors;
 	private float[] heights;
 	
@@ -23,13 +22,12 @@ public class CircleWave extends Mesh{
 	 * @param maxOuterRadius - the largest radius possible for the outer edge of each circle
 	 * @param minInnerRadius - the smallest radius possible for the inner edge of each circle
 	 * @param maxInnerRadius - the largest radius possible for the inner edge of each circle
-	 * @param spacing - space between each circle
 	 * @param minY - minimum height of a circle
 	 * @param maxY - maximum height of a circle
 	 * @param colorMin - one end of the color spectrum these circles will be drawn with
 	 * @param colorMax - other end of color spectrum
 	 */
-	public CircleWave(int numCircles, float speed, float minOuterRadius, float maxOuterRadius, float minInnerRadius, float maxInnerRadius, float spacing, float minY, float maxY, float[] colorMin, float[] colorMax){
+	public CircleWave(int numCircles, float speed, float minOuterRadius, float maxOuterRadius, float minInnerRadius, float maxInnerRadius, float minY, float maxY, float[] colorMin, float[] colorMax){
 		this.dR = ((maxOuterRadius - minOuterRadius)/numCircles);
 		this.numCircles = numCircles;
 		this.speed = speed;

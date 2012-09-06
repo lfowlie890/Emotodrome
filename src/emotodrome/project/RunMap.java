@@ -8,7 +8,11 @@ import android.view.MenuItem;
 
 import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapView;
-
+/**
+ * Not Currently Used
+ * @author luke
+ *
+ */
 public class RunMap extends MapActivity{
 
 	private MapView mapView;

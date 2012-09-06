@@ -31,7 +31,8 @@ import android.view.TouchDelegate;
 import android.view.GestureDetector.OnGestureListener;
 
 /**
- * This class handles the rendering of the opengl window.
+ * This class handles the rendering of the opengl window. This is where anything you want to draw will go.  Objects that will be drawn should be initialized in the constructor
+ * and drawn in onDrawFrame. Texturing is done in onSurfaceCreated.
  * 
  * @author Luke Fowlie
  */
@@ -114,7 +115,7 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 	/** The Activity Context */
 	private Context context;
 	
-	private Thread locateThread;
+	private Thread locateThread;	//thread to locate closest ice
 	
 	public static boolean newUsers = false;
 	
@@ -213,7 +214,7 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 		updateLatLonBounds();
 		
 		
-		
+		//set up coordinates at which we will move the maps forward/backward/left/right and redownload new images
 		mapMoveForward = -MAPHEIGHT/2;
 		mapMoveBackward = MAPHEIGHT/2;
 		mapMoveRight = MAPWIDTH/2;
@@ -226,18 +227,20 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 		sky = new Group();
 		sky.add(skytop);
 		
-		users = new HashMap<Integer, User>();
+		users = new HashMap<Integer, User>();	
 		iceData = backend.processIceData();		//process ice data so we can draw it
 		ice = new Group();
 		closestIce = new Group();
 		backend.listenUserUpdates(users);		//begin listening for location updates from other users
 
+		//position the camera two coordinates back from the center of the initial map center, facing toward the map center
 		camera = new Camera(new Vec3(0f, 0f, 2f), ((MapTile) mapgroup.get(CENTERINDEX)).getCenter());
 		userAvatar = new Cube(1f, 1f, 1f);
 		userAvatar.x = camera.getEyeX();
 		userAvatar.y = camera.getEyeY();
 		userAvatar.z = camera.getEyeZ();
 		
+		//marker for the origin
 		originMarker = new Cube(.2f, .2f, .2f);
 		originMarker.x = 0;
 		originMarker.y = .1f;
@@ -245,32 +248,15 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 		
 		r = new Random();
 		pyrite = new Pyrite(.5f, .5f, .5f, r);
-		circleWave = new CircleWave(4, .01f, .1f, 1f, .01f, .1f, 0f, 0f, 2f, new float[] {0,0,0,1}, new float[]{0,1,0,1});
+		circleWave = new CircleWave(4, .01f, .1f, 1f, .01f, .1f, 0f, 2f, new float[] {0,0,0,1}, new float[]{0,1,0,1});
 		circleWave.x = -10;
 		circleWave.z = 3;
 		triangleOrigami = new TriangleOrigami(new Vec3(10, 0, 10), new Vec3(11, 1, 11), new Vec3(13, 0, 10.5f), r);
 		anchoredBezier = new AnchoredBezier(2, 0, 20, 0, 2, 1, 10);
-		
-//		((MapTile) mapgroup.get(4)).addIce(pyrite);
-//		((MapTile) mapgroup.get(4)).addIce(circleWave);
-//		((MapTile) mapgroup.get(4)).addIce(triangleOrigami);
-//		
+				
 		new Thread(new IceThread()).start();
 		locateThread = new Thread(new FindClosest());
 		
-		
-//		new Thread(new Runnable(){
-//			@Override
-//			public void run(){
-//				addIce();
-//			}
-//		}).start();
-//		new Thread(new Runnable(){
-//			@Override
-//			public void run(){
-//				removeIce();
-//			}
-//		}).start();
 		System.out.println("renderer setup done");
 	}
 
@@ -353,11 +339,12 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 			backend.updateUserLocation(camera.getMoveAmount());							//if we have moved, update the server
 		}
 		
+		//if new users have logged on, start a new user thread
 		if (newUsers){
 			new Thread(new UserThread()).start();
 		}
 		
-		GLU.gluLookAt(gl, camera.getEyeX(), camera.getEyeY(), camera.getEyeZ(), 	//defines where the camera is looking
+		GLU.gluLookAt(gl, camera.getEyeX(), camera.getEyeY(), camera.getEyeZ(), 	//defines where the camera is looking, this should probably not be changed
 				camera.getPerspX(), camera.getPerspY(), camera.getPerspZ(),
 				camera.getUpX(), camera.getUpY(), camera.getUpZ());
 		
@@ -437,15 +424,6 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 			gl.glPopMatrix();
 		}
 		
-		//pyrite.draw(gl);
-//		gl.glDisable(GL10.GL_TEXTURE_2D);
-//		for (int i = 0; i < ice.size(); i++){
-//			gl.glPushMatrix();
-//			ice.get(i).draw(gl);
-//			gl.glPopMatrix();
-//		}
-//		gl.glEnable(GL10.GL_TEXTURE_2D);
-		
 		//draw our meshes
 		gl.glPushMatrix();
 		mapgroup.draw(gl);
@@ -479,62 +457,11 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 		triangleOrigami.draw(gl);
 		gl.glPopMatrix();
 
-		//gl.glDisable(GL10.GL_TEXTURE_2D);
-//		angle = (angle + 3.0f) % 360;
-//		for (int i = 0; i < NUMSHAPES; i++){
-//			gl.glPushMatrix();
-//			Mesh cube = root.get(i);
-//			gl.glTranslatef(cube.x, cube.y, cube.z);
-//			cube.ry = angle * (i % 2 == 0 ? 1 : -1);
-//			cube.draw(gl);
-//			gl.glPopMatrix();
-//			
-//		}
-		
-		//gl.glEnable(GL10.GL_TEXTURE_2D);
 	}		
 
-//	private synchronized void addIce() {
-//		while (true){
-//			Queue<LocationValuePair> add = backend.getIceToAdd();
-//			if (add != null){
-//				LocationValuePair lvp;
-//				while ((lvp = add.poll()) != null && ice.size() < 10){
-//					Vec3 loc = lvp.getLocation();
-//					float size = lvp.getValue()/200;
-//					TriangleOrigami t = new TriangleOrigami(new Vec3(loc.x, 0, loc.z), new Vec3(loc.x + size, 2 * size, loc.z + size), new Vec3(loc.x - size, 2 * size, loc.z - size), new Random());
-//					t.setId(loc);
-//					ice.add(t);
-//				}
-//			}
-//			try {
-//				Thread.sleep(100);
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
-//		}
-//	}
-//
-//	private synchronized void removeIce() {
-//		while(true){
-//			Queue<Vec3> remove = backend.getIceToRemove();
-//			Vec3 id;
-//			while ((id = remove.poll()) != null){
-//				for (int i = 0; i < ice.size(); i++){
-//					if (((TriangleOrigami) ice.get(i)).getId().equals(id)){
-//						ice.remove(i);
-//					}
-//				}
-//			}
-//			try {
-//				Thread.sleep(100);
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
-//		}
-//	}
 	/**
 	 * If the surface changes, reset the view
+	 * This function should not need to be changed.
 	 */
 	public void onSurfaceChanged(GL10 gl, int width, int height) {
 		if(height == 0) { 						//Prevent A Divide By Zero By
@@ -760,7 +687,7 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 		}
 	}
 	
-	//handles determining where we should be drawing ice and what it should look like
+	//handles determining where we should be drawing ice and what it should look like. This thread is run when map tiles are redrawn
 	private class IceThread implements Runnable{
 		
 		@Override
@@ -769,7 +696,7 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 				MapTile m = (MapTile) mapgroup.get(i);
 				float east = m.getEastLon();
 				float west = m.getWestLon();
-				//use these if trying to see fake ice data at (0,0)
+//use these instead of m.getNorthLat(), m.getSouthLat() if trying to see fake ice data at (0,0)
 //				float north = 43.1f;
 //				float south = 42.9f;
 				float north = m.getNorthLat();
@@ -778,7 +705,9 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 				for (Vec3 pos : iceData.keySet()){
 					if (pos.x <= east && pos.x > west && pos.z <= north && pos.z > south){
 						float iceValue = iceData.get(pos);
-						CircleWave c = new CircleWave((int) Math.ceil(iceValue/10), .01f, .1f, 1f, .01f, .1f, 0f, 0f, 2f, new float[] {0,0,0,1}, new float[]{0,1,0,1});
+						//right now we are drawing ice as a circle wave with the number of circles dependent on the amount of ice. this will probably eventually be changed to draw
+						//different types of objects
+						CircleWave c = new CircleWave((int) Math.ceil(iceValue/10), .01f, .1f, 1f, .01f, .1f, 0f, 2f, new float[] {0,0,0,1}, new float[]{0,1,0,1});
 						c.x = m.x;
 						c.z = m.z;
 						c.y = 1;
@@ -786,6 +715,7 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 						System.out.println("FOUND ICE: " + iceValue);
 					}
 				}
+				//we also draw whatever users are located on this ice tile (their static avatar, not the one that moves)
 				for (User u : users.values()){
 					Vec3 latLon = u.getLatLon();
 					System.out.println("USER LOC :" + latLon);
@@ -803,6 +733,8 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 		}
 		
 	}
+	
+	//This thread is run any time a new user logs on to determine where their initial position is. This thread does not deal with their movement after the initial position.
 	private class UserThread implements Runnable{
 		
 		@Override
@@ -818,6 +750,7 @@ public class OpenGLRenderer implements Renderer, OnGestureListener, SensorEventL
 					int id = u.getId();
 					Vec3 latLon = u.getLatLon();
 					System.out.println("USER LOC :" + latLon);
+					//if their coordinates are within this tile, put them here
 					if (latLon.x <= east && latLon.x > west && latLon.z <= north && latLon.z > south){
 						System.out.println("user placed at" + m.x + "," + m.z);
 						Mesh marker = u.getUserPlacemarker();
